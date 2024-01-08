@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0qdgitv" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.11.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.15.0">
+  <bpmn:collaboration id="Collaboration_014rrcd">
+    <bpmn:participant id="Participant_08d176o" name="GoTo" processRef="GoTo" />
+  </bpmn:collaboration>
+  <bpmn:process id="GoTo" name="GoTo" isExecutable="false">
+    <bpmn:dataObjectReference id="DataObjectReference_1nonjc0" name="destination" dataObjectRef="DataObject_1s3e753">
+      <bpmn:extensionElements>
+        <camunda:properties>
+          <camunda:property name="x_destination" value="${x_target}" />
+          <camunda:property name="y_destination" value="${y_target}" />
+          <camunda:property name="z_destination" value="0" />
+        </camunda:properties>
+      </bpmn:extensionElements>
+    </bpmn:dataObjectReference>
+    <bpmn:dataObject id="DataObject_1s3e753" />
+    <bpmn:sequenceFlow id="Flow_0kxnn19" sourceRef="startGT" targetRef="Activity_nav" />
+    <bpmn:sequenceFlow id="Flow_1jq1lqv" sourceRef="Gateway_1ue7cz5" targetRef="Event_1xbput1" />
+    <bpmn:sequenceFlow id="Flow_0tdb7pt" sourceRef="Activity_nav" targetRef="Gateway_1ue7cz5" />
+    <bpmn:sequenceFlow id="Flow_0k4zm40" sourceRef="Activity_0zdm893" targetRef="Event_end_goto" />
+    <bpmn:endEvent id="Event_end_goto">
+      <bpmn:incoming>Flow_0k4zm40</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:scriptTask id="Activity_0zdm893" name="Stop" scriptFormat="JavaScript">
+      <bpmn:incoming>Flow_reached</bpmn:incoming>
+      <bpmn:outgoing>Flow_0k4zm40</bpmn:outgoing>
+      <bpmn:script>var node = this.environment.variables.ros_node;
+const publisher = node.createPublisher("geometry_msgs/msg/Twist", "cmd_vel");
+publisher.publish({
+linear: {x: 0.0, y: 0.0, z: 0.0},
+angular: {x: 0.0, y: 0.0, z: 0.0}
+});
+next();</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:startEvent id="startGT">
+      <bpmn:outgoing>Flow_0kxnn19</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:scriptTask id="Activity_nav" name="Navigate" scriptFormat="JavaScript">
+      <bpmn:incoming>Flow_0kxnn19</bpmn:incoming>
+      <bpmn:outgoing>Flow_0tdb7pt</bpmn:outgoing>
+      <bpmn:property id="Property_1b1iiby" name="__targetRef_placeholder" />
+      <bpmn:dataInputAssociation id="DataInputAssociation_05dtzy6">
+        <bpmn:sourceRef>DataObjectReference_1nonjc0</bpmn:sourceRef>
+        <bpmn:targetRef>Property_1b1iiby</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:script>var node = this.environment.variables.ros_node;
+const publisher = node.createPublisher("geometry_msgs/msg/Twist", "cmd_vel");
+publisher.publish({
+linear: {x: 0.1, y: 0.0, z: 0.0},
+angular: {x: 0.0, y: 0.0, z: 0.0}
+});
+next();</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:exclusiveGateway id="Gateway_1ue7cz5">
+      <bpmn:incoming>Flow_0tdb7pt</bpmn:incoming>
+      <bpmn:incoming>Flow_not_reached</bpmn:incoming>
+      <bpmn:outgoing>Flow_1jq1lqv</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:intermediateCatchEvent id="Event_1xbput1" name="wait2sec">
+      <bpmn:incoming>Flow_1jq1lqv</bpmn:incoming>
+      <bpmn:outgoing>Flow_1thqc8o</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_1cocva0">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT2S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="Gateway_0mn0474" name="destination reached?">
+      <bpmn:incoming>Flow_1tir7h3</bpmn:incoming>
+      <bpmn:outgoing>Flow_not_reached</bpmn:outgoing>
+      <bpmn:outgoing>Flow_reached</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_not_reached" name="no" sourceRef="Gateway_0mn0474" targetRef="Gateway_1ue7cz5">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript">next(null,!this.environment.variables.reached);</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_reached" name="yes" sourceRef="Gateway_0mn0474" targetRef="Activity_0zdm893">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript">next(null,this.environment.variables.reached);</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1thqc8o" sourceRef="Event_1xbput1" targetRef="Activity_1gbttx6" />
+    <bpmn:scriptTask id="Activity_1gbttx6" name="Check Position" scriptFormat="JavaScript">
+      <bpmn:incoming>Flow_1thqc8o</bpmn:incoming>
+      <bpmn:outgoing>Flow_1tir7h3</bpmn:outgoing>
+      <bpmn:script>const node_env = this.environment.variables;
+var node = node_env.ros_node;
+this.environment.variables.reached = false;
+const subscriber = node.createSubscription("nav_msgs/msg/Odometry", "odom", (msg) =&gt; {
+    var x = msg.pose.pose.position.x;
+    var y = msg.pose.pose.position.y;
+    var z = msg.pose.pose.position.z;
+this.environment.variables.my_x = x;
+this.environment.variables.my_y = y;
+this.environment.variables.my_z = z;
+    if ((node_env.x_target &gt;= x - 0.2 &amp;&amp; node_env.x_target &lt;= x + 0.2) &amp;&amp; (node_env.y_target &gt;= y - 0.2 &amp;&amp; node_env.y_target &lt;=y + 0.2)){
+        this.environment.variables.reached = true;
+        node.destroySubscription(subscriber);
+    }
+  });
+next();</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:sequenceFlow id="Flow_1tir7h3" sourceRef="Activity_1gbttx6" targetRef="Gateway_0mn0474" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_014rrcd">
+      <bpmndi:BPMNShape id="Participant_08d176o_di" bpmnElement="Participant_08d176o" isHorizontal="true">
+        <dc:Bounds x="130" y="120" width="928" height="250" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1tir7h3_di" bpmnElement="Flow_1tir7h3">
+        <di:waypoint x="680" y="255" />
+        <di:waypoint x="715" y="255" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1thqc8o_di" bpmnElement="Flow_1thqc8o">
+        <di:waypoint x="528" y="255" />
+        <di:waypoint x="580" y="255" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0m4il0x_di" bpmnElement="Flow_reached">
+        <di:waypoint x="765" y="255" />
+        <di:waypoint x="840" y="255" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="798" y="237" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1obfnwa_di" bpmnElement="Flow_not_reached">
+        <di:waypoint x="740" y="230" />
+        <di:waypoint x="740" y="165" />
+        <di:waypoint x="420" y="165" />
+        <di:waypoint x="420" y="230" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="587" y="147" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0k4zm40_di" bpmnElement="Flow_0k4zm40">
+        <di:waypoint x="940" y="255" />
+        <di:waypoint x="1002" y="255" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0tdb7pt_di" bpmnElement="Flow_0tdb7pt">
+        <di:waypoint x="360" y="255" />
+        <di:waypoint x="395" y="255" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1jq1lqv_di" bpmnElement="Flow_1jq1lqv">
+        <di:waypoint x="445" y="255" />
+        <di:waypoint x="492" y="255" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0kxnn19_di" bpmnElement="Flow_0kxnn19">
+        <di:waypoint x="208" y="255" />
+        <di:waypoint x="260" y="255" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="DataObjectReference_1nonjc0_di" bpmnElement="DataObjectReference_1nonjc0">
+        <dc:Bounds x="212" y="140" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="203" y="197" width="54" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1rkqxf0_di" bpmnElement="Event_end_goto">
+        <dc:Bounds x="1002" y="237" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_15e5f2m_di" bpmnElement="Activity_0zdm893">
+        <dc:Bounds x="840" y="215" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0oaeafw_di" bpmnElement="startGT">
+        <dc:Bounds x="172" y="237" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1qbcr1g_di" bpmnElement="Activity_nav">
+        <dc:Bounds x="260" y="215" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1ue7cz5_di" bpmnElement="Gateway_1ue7cz5" isMarkerVisible="true">
+        <dc:Bounds x="395" y="230" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_021hje1_di" bpmnElement="Event_1xbput1">
+        <dc:Bounds x="492" y="237" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="489" y="280" width="43" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0mn0474_di" bpmnElement="Gateway_0mn0474" isMarkerVisible="true">
+        <dc:Bounds x="715" y="230" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="713" y="287" width="54" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_03lwdep_di" bpmnElement="Activity_1gbttx6">
+        <dc:Bounds x="580" y="215" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="DataInputAssociation_05dtzy6_di" bpmnElement="DataInputAssociation_05dtzy6">
+        <di:waypoint x="248" y="165" />
+        <di:waypoint x="310" y="165" />
+        <di:waypoint x="310" y="215" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0g1w5vc" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.11.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.15.0">
+  <bpmn:collaboration id="Collaboration_0mgj9jt">
+    <bpmn:participant id="Participant_0lld2mr" name="TakeOff" processRef="TakeOff" />
+  </bpmn:collaboration>
+  <bpmn:process id="TakeOff" name="TakeOff" isExecutable="false">
+    <bpmn:startEvent id="Event_start_toff">
+      <bpmn:outgoing>Flow_03e9pl0</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:scriptTask id="Activity_0wo63ro" name="Check Altitude" scriptFormat="JavaScript">
+      <bpmn:incoming>Flow_03e9pl0</bpmn:incoming>
+      <bpmn:outgoing>Flow_0fuaih9</bpmn:outgoing>
+      <bpmn:script>const node_env = this.environment.variables;
+var node = node_env.ros_node;
+
+const subscriber = node.createSubscription("nav_msgs/msg/Odometry", "odom", (msg) =&gt; {
+    var z = msg.pose.pose.position.z;
+    if (z &lt;= 0.5){
+	this.environment.variables.in_air = false;
+        node.destroySubscription(subscriber);
+    }
+  });
+next();</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:exclusiveGateway id="Gateway_0amtmb8" name="in the air?">
+      <bpmn:incoming>Flow_0fuaih9</bpmn:incoming>
+      <bpmn:outgoing>Flow_1maa23e</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1lj0ruj</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:exclusiveGateway id="Gateway_1ag5nlo">
+      <bpmn:incoming>Flow_0u3btsw</bpmn:incoming>
+      <bpmn:incoming>Flow_1lj0ruj</bpmn:incoming>
+      <bpmn:outgoing>Flow_16kervo</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:dataObjectReference id="DataObjectReference_0zzc8sp" name="z_destination" dataObjectRef="DataObject_0q9jqr1">
+      <bpmn:extensionElements>
+        <camunda:properties>
+          <camunda:property name="z_destination" value="1.5" />
+        </camunda:properties>
+      </bpmn:extensionElements>
+    </bpmn:dataObjectReference>
+    <bpmn:dataObject id="DataObject_0q9jqr1" />
+    <bpmn:sequenceFlow id="Flow_0u3btsw" sourceRef="Activity_takingoff" targetRef="Gateway_1ag5nlo" />
+    <bpmn:sequenceFlow id="Flow_03e9pl0" sourceRef="Event_start_toff" targetRef="Activity_0wo63ro" />
+    <bpmn:sequenceFlow id="Flow_0fuaih9" sourceRef="Activity_0wo63ro" targetRef="Gateway_0amtmb8" />
+    <bpmn:sequenceFlow id="Flow_1maa23e" name="no" sourceRef="Gateway_0amtmb8" targetRef="Activity_takingoff">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript">next(null, !this.environment.variables.in_air);</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_16kervo" sourceRef="Gateway_1ag5nlo" targetRef="Event_1jv4old" />
+    <bpmn:sequenceFlow id="Flow_1lj0ruj" name="yes" sourceRef="Gateway_0amtmb8" targetRef="Gateway_1ag5nlo">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript">next(null, this.environment.variables.in_air);</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:scriptTask id="Activity_takingoff" name="Send TakeOff" scriptFormat="JavaScript">
+      <bpmn:incoming>Flow_1maa23e</bpmn:incoming>
+      <bpmn:outgoing>Flow_0u3btsw</bpmn:outgoing>
+      <bpmn:property id="Property_01djtjv" name="__targetRef_placeholder" />
+      <bpmn:dataInputAssociation id="DataInputAssociation_1sqqb0s">
+        <bpmn:sourceRef>DataObjectReference_0zzc8sp</bpmn:sourceRef>
+        <bpmn:targetRef>Property_01djtjv</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:script>const node_env = this.environment.variables;
+var node = node_env.ros_node;
+
+const client = node.createClient("tello_msgs/srv/TelloAction", "tello_action");
+const request = new Object();
+request["cmd"] = "takeoff";
+
+client.waitForService(1000).then((result) =&gt; {
+    if (!result) {
+        console.log("Error: service not available");
+        return;
+    }
+    console.log("Sending: ", request);
+    client.sendRequest(request, (response) =&gt; {
+        console.log("Result: ", response);
+    });
+});
+
+next();</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:sequenceFlow id="Flow_0ulbqhl" sourceRef="Event_1jv4old" targetRef="Event_1hzkqct" />
+    <bpmn:endEvent id="Event_1hzkqct">
+      <bpmn:incoming>Flow_0ulbqhl</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:intermediateCatchEvent id="Event_1jv4old" name="5sec">
+      <bpmn:incoming>Flow_16kervo</bpmn:incoming>
+      <bpmn:outgoing>Flow_0ulbqhl</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_1rnqhjk">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT5S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0mgj9jt">
+      <bpmndi:BPMNShape id="Participant_0lld2mr_di" bpmnElement="Participant_0lld2mr" isHorizontal="true">
+        <dc:Bounds x="160" y="85" width="800" height="335" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0ulbqhl_di" bpmnElement="Flow_0ulbqhl">
+        <di:waypoint x="868" y="280" />
+        <di:waypoint x="902" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1lj0ruj_di" bpmnElement="Flow_1lj0ruj">
+        <di:waypoint x="500" y="305" />
+        <di:waypoint x="500" y="370" />
+        <di:waypoint x="780" y="370" />
+        <di:waypoint x="780" y="305" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="631" y="352" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_16kervo_di" bpmnElement="Flow_16kervo">
+        <di:waypoint x="805" y="280" />
+        <di:waypoint x="832" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1maa23e_di" bpmnElement="Flow_1maa23e">
+        <di:waypoint x="525" y="280" />
+        <di:waypoint x="600" y="280" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="556" y="262" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0fuaih9_di" bpmnElement="Flow_0fuaih9">
+        <di:waypoint x="440" y="280" />
+        <di:waypoint x="475" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_03e9pl0_di" bpmnElement="Flow_03e9pl0">
+        <di:waypoint x="288" y="280" />
+        <di:waypoint x="340" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0u3btsw_di" bpmnElement="Flow_0u3btsw">
+        <di:waypoint x="700" y="280" />
+        <di:waypoint x="755" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_14lxopw_di" bpmnElement="Event_start_toff">
+        <dc:Bounds x="252" y="262" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1pow4tm_di" bpmnElement="Activity_0wo63ro">
+        <dc:Bounds x="340" y="240" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0amtmb8_di" bpmnElement="Gateway_0amtmb8" isMarkerVisible="true">
+        <dc:Bounds x="475" y="255" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="475" y="231" width="49" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1ag5nlo_di" bpmnElement="Gateway_1ag5nlo" isMarkerVisible="true">
+        <dc:Bounds x="755" y="255" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DataObjectReference_0zzc8sp_di" bpmnElement="DataObjectReference_0zzc8sp">
+        <dc:Bounds x="552" y="135" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="538" y="192" width="65" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0a3slx8_di" bpmnElement="Activity_takingoff">
+        <dc:Bounds x="600" y="240" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1hzkqct_di" bpmnElement="Event_1hzkqct">
+        <dc:Bounds x="902" y="262" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1gd1cxl_di" bpmnElement="Event_1jv4old">
+        <dc:Bounds x="832" y="262" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="839" y="305" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="DataInputAssociation_1sqqb0s_di" bpmnElement="DataInputAssociation_1sqqb0s">
+        <di:waypoint x="588" y="160" />
+        <di:waypoint x="630" y="160" />
+        <di:waypoint x="630" y="240" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

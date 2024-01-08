@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_086fopv" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.11.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.15.0">
+  <bpmn:signal id="Signal_0x69ij4" name="cmd_vel" />
+  <bpmn:signal id="Signal_0y8darp" />
+  <bpmn:collaboration id="Collaboration_177ihp2">
+    <bpmn:participant id="Pluto" name="Pluto" processRef="Process_0qpm99t" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_0qpm99t" isExecutable="true">
+    <bpmn:exclusiveGateway id="choice">
+      <bpmn:incoming>Flow_0e1ebqu</bpmn:incoming>
+      <bpmn:outgoing>Flow_VEL</bpmn:outgoing>
+      <bpmn:outgoing>Flow_NAME</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:intermediateThrowEvent id="cmd_vel" name="cmd_vel">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="cmd_vel">
+            <camunda:list>
+              <camunda:value>std_msgs/msg/String</camunda:value>
+              <camunda:value>{"linear": {"x": 2.0, "y": 0.0, "z": 0.0}, "angular": {"x": 0.0, "y": 0.0, "z": 1.8}}</camunda:value>
+            </camunda:list>
+          </camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_VEL</bpmn:incoming>
+      <bpmn:outgoing>Flow_1gysomy</bpmn:outgoing>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_13ro1ef" signalRef="Signal_0x69ij4" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:exclusiveGateway id="Gateway_1squdph">
+      <bpmn:incoming>Flow_1pxw59o</bpmn:incoming>
+      <bpmn:incoming>Flow_1gysomy</bpmn:incoming>
+      <bpmn:outgoing>Flow_0v4qa9y</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:intermediateThrowEvent id="Event_04vns77" name="name">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="cmd_vel">
+            <camunda:list>
+              <camunda:value>std_msgs/msg/String</camunda:value>
+              <camunda:value>"pluto"</camunda:value>
+            </camunda:list>
+          </camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_NAME</bpmn:incoming>
+      <bpmn:outgoing>Flow_1pxw59o</bpmn:outgoing>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_0mzqohz" signalRef="Signal_0x69ij4" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:endEvent id="paperino" name="paperino">
+      <bpmn:incoming>Flow_0loitbv</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:scriptTask id="Topolino" name="Topolino" scriptFormat="Javascript">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="Sara" />
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0v4qa9y</bpmn:incoming>
+      <bpmn:outgoing>Flow_0loitbv</bpmn:outgoing>
+      <bpmn:script>var controllo = 1;
+next();</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:scriptTask id="Pippo" name="Pippo" scriptFormat="JavaScript">
+      <bpmn:incoming>Flow_0djpxkc</bpmn:incoming>
+      <bpmn:outgoing>Flow_0e1ebqu</bpmn:outgoing>
+      <bpmn:script>this.environment.variables.controllo = 1;
+next();</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:startEvent id="start" name="start">
+      <bpmn:outgoing>Flow_0djpxkc</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0loitbv" sourceRef="Topolino" targetRef="paperino" />
+    <bpmn:sequenceFlow id="Flow_1gysomy" sourceRef="cmd_vel" targetRef="Gateway_1squdph" />
+    <bpmn:sequenceFlow id="Flow_NAME" sourceRef="choice" targetRef="Event_04vns77">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript">next(null, this.environment.variables.controllo == 0);</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_VEL" sourceRef="choice" targetRef="cmd_vel">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript">next(null, this.environment.variables.controllo == 1);</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0v4qa9y" sourceRef="Gateway_1squdph" targetRef="Topolino" />
+    <bpmn:sequenceFlow id="Flow_1pxw59o" sourceRef="Event_04vns77" targetRef="Gateway_1squdph" />
+    <bpmn:sequenceFlow id="Flow_0djpxkc" sourceRef="start" targetRef="Pippo" />
+    <bpmn:sequenceFlow id="Flow_0e1ebqu" sourceRef="Pippo" targetRef="choice" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_177ihp2">
+      <bpmndi:BPMNShape id="Participant_0ab9ar3_di" bpmnElement="Pluto" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="878" height="250" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0loitbv_di" bpmnElement="Flow_0loitbv">
+        <di:waypoint x="850" y="205" />
+        <di:waypoint x="902" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1gysomy_di" bpmnElement="Flow_1gysomy">
+        <di:waypoint x="608" y="145" />
+        <di:waypoint x="690" y="145" />
+        <di:waypoint x="690" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ij5d28_di" bpmnElement="Flow_NAME">
+        <di:waypoint x="490" y="230" />
+        <di:waypoint x="490" y="265" />
+        <di:waypoint x="572" y="265" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0wtaitn_di" bpmnElement="Flow_VEL">
+        <di:waypoint x="490" y="180" />
+        <di:waypoint x="490" y="145" />
+        <di:waypoint x="572" y="145" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0v4qa9y_di" bpmnElement="Flow_0v4qa9y">
+        <di:waypoint x="715" y="205" />
+        <di:waypoint x="750" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1pxw59o_di" bpmnElement="Flow_1pxw59o">
+        <di:waypoint x="608" y="265" />
+        <di:waypoint x="690" y="265" />
+        <di:waypoint x="690" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0djpxkc_di" bpmnElement="Flow_0djpxkc">
+        <di:waypoint x="248" y="205" />
+        <di:waypoint x="330" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0e1ebqu_di" bpmnElement="Flow_0e1ebqu">
+        <di:waypoint x="430" y="205" />
+        <di:waypoint x="465" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Gateway_0nbk5ok_di" bpmnElement="choice" isMarkerVisible="true">
+        <dc:Bounds x="465" y="180" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0a9ci9r_di" bpmnElement="cmd_vel">
+        <dc:Bounds x="572" y="127" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="569" y="103" width="41" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1squdph_di" bpmnElement="Gateway_1squdph" isMarkerVisible="true">
+        <dc:Bounds x="665" y="180" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_04vns77_di" bpmnElement="Event_04vns77">
+        <dc:Bounds x="572" y="247" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="577" y="290" width="28" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1xtst1x_di" bpmnElement="paperino">
+        <dc:Bounds x="902" y="187" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="899" y="230" width="43" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0ejo8jx_di" bpmnElement="Topolino">
+        <dc:Bounds x="750" y="165" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_13lr5m4_di" bpmnElement="Pippo">
+        <dc:Bounds x="330" y="165" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="start">
+        <dc:Bounds x="212" y="187" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="219" y="230" width="22" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

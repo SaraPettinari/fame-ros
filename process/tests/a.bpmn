@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1oswxe3" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.11.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.15.0">
+  <bpmn:collaboration id="Collaboration_0icjy6x">
+    <bpmn:participant id="Participant_00fq04b" name="DINGO" processRef="Process_1wtuevm" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_1wtuevm" isExecutable="true">
+    <bpmn:endEvent id="ciao" name="done">
+      <bpmn:extensionElements>
+        <camunda:properties>
+          <camunda:property name="type" value="std_msgs/msg/Bool" />
+          <camunda:property name="payload" value="true" />
+        </camunda:properties>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1pjs877</bpmn:incoming>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_04qz3za" signalRef="Signal_00ae0fv" />
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1pjs877" sourceRef="Activity_09a5ftx" targetRef="ciao" />
+    <bpmn:sequenceFlow id="Flow_11hcr3b" sourceRef="CIAO" targetRef="Activity_09a5ftx" />
+    <bpmn:startEvent id="CIAO" name="pippo">
+      <bpmn:extensionElements>
+        <camunda:properties>
+          <camunda:property name="type" value="std_msgs/msg/Bool" />
+        </camunda:properties>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_11hcr3b</bpmn:outgoing>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_0bclimy" signalRef="Signal_00ae0fv" />
+    </bpmn:startEvent>
+    <bpmn:task id="Activity_09a5ftx">
+      <bpmn:incoming>Flow_11hcr3b</bpmn:incoming>
+      <bpmn:outgoing>Flow_1pjs877</bpmn:outgoing>
+    </bpmn:task>
+  </bpmn:process>
+  <bpmn:signal id="Signal_00ae0fv" name="done" />
+  <bpmn:signal id="Signal_0qdbavj" name="target_found" />
+  <bpmn:signal id="Signal_1oq74hb" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0icjy6x">
+      <bpmndi:BPMNShape id="Participant_00fq04b_di" bpmnElement="Participant_00fq04b" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="550" height="230" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1pjs877_di" bpmnElement="Flow_1pjs877">
+        <di:waypoint x="480" y="200" />
+        <di:waypoint x="592" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11hcr3b_di" bpmnElement="Flow_11hcr3b">
+        <di:waypoint x="268" y="200" />
+        <di:waypoint x="380" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_0829z2m_di" bpmnElement="ciao">
+        <dc:Bounds x="592" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="598" y="225" width="25" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1vgqs8t_di" bpmnElement="CIAO">
+        <dc:Bounds x="232" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="237" y="225" width="27" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_09a5ftx_di" bpmnElement="Activity_09a5ftx">
+        <dc:Bounds x="380" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

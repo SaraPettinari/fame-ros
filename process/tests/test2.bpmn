@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1igr2nz" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.11.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.15.0">
+  <bpmn:process id="TestProcess" isExecutable="true">
+    <bpmn:endEvent id="Event_074ihpg" name="paperino">
+      <bpmn:incoming>Flow_0dh2hic</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:scriptTask id="Pippo" name="Pippo" scriptFormat="Javascript">
+      <bpmn:incoming>Flow_1r2nwtm</bpmn:incoming>
+      <bpmn:outgoing>Flow_0k90ac1</bpmn:outgoing>
+      <bpmn:script>this.environment.variables.sara = 0;
+next();</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:intermediateThrowEvent id="Event_070wlrz" name="name">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="name">
+            <camunda:list>
+              <camunda:value>std_msgs/msg/String</camunda:value>
+              <camunda:value>"pluto"</camunda:value>
+            </camunda:list>
+          </camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>s2</bpmn:incoming>
+      <bpmn:outgoing>Flow_0x7o6fy</bpmn:outgoing>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_07uq9e4" signalRef="Signal_0m9vev5" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_0x7o6fy" sourceRef="Event_070wlrz" targetRef="Gateway_1lbn0ec" />
+    <bpmn:exclusiveGateway id="Gateway_1lbn0ec">
+      <bpmn:incoming>Flow_0x7o6fy</bpmn:incoming>
+      <bpmn:incoming>Flow_0btk6am</bpmn:incoming>
+      <bpmn:outgoing>Flow_0dh2hic</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_0dh2hic" sourceRef="Gateway_1lbn0ec" targetRef="Event_074ihpg" />
+    <bpmn:intermediateThrowEvent id="Event_1j485ca" name="cmd_vel">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="cmd_vel">
+            <camunda:list>
+              <camunda:value>geometry_msgs/msg/Twist</camunda:value>
+              <camunda:value>{"linear": {"x": 2.0, "y": 0.0, "z": 0.0}, "angular": {"x": 0.0, "y": 0.0, "z": 1.8}}</camunda:value>
+            </camunda:list>
+          </camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>s1</bpmn:incoming>
+      <bpmn:outgoing>Flow_0btk6am</bpmn:outgoing>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_0ehml76" signalRef="Signal_1pxxf7e" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_0btk6am" sourceRef="Event_1j485ca" targetRef="Gateway_1lbn0ec" />
+    <bpmn:exclusiveGateway id="choice">
+      <bpmn:incoming>Flow_0k90ac1</bpmn:incoming>
+      <bpmn:outgoing>s2</bpmn:outgoing>
+      <bpmn:outgoing>s1</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="s2" sourceRef="choice" targetRef="Event_070wlrz">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript">next(null, this.environment.variables.sara == 0);</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="s1" sourceRef="choice" targetRef="Event_1j485ca">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript">next(null, this.environment.variables.sara == 1);</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0k90ac1" sourceRef="Pippo" targetRef="choice" />
+    <bpmn:startEvent id="Event_0i4e8kf" name="start">
+      <bpmn:outgoing>Flow_1r2nwtm</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_1r2nwtm" sourceRef="Event_0i4e8kf" targetRef="Pippo" />
+  </bpmn:process>
+  <bpmn:signal id="Signal_1pxxf7e" name="cmd_vel" />
+  <bpmn:signal id="Signal_0m9vev5" name="cmd_vel" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="TestProcess">
+      <bpmndi:BPMNEdge id="Flow_1r2nwtm_di" bpmnElement="Flow_1r2nwtm">
+        <di:waypoint x="188" y="180" />
+        <di:waypoint x="240" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0k90ac1_di" bpmnElement="Flow_0k90ac1">
+        <di:waypoint x="340" y="180" />
+        <di:waypoint x="395" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1nqyvba_di" bpmnElement="s1">
+        <di:waypoint x="420" y="155" />
+        <di:waypoint x="420" y="120" />
+        <di:waypoint x="582" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13h4390_di" bpmnElement="s2">
+        <di:waypoint x="420" y="205" />
+        <di:waypoint x="420" y="240" />
+        <di:waypoint x="582" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0btk6am_di" bpmnElement="Flow_0btk6am">
+        <di:waypoint x="618" y="120" />
+        <di:waypoint x="720" y="120" />
+        <di:waypoint x="720" y="155" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0dh2hic_di" bpmnElement="Flow_0dh2hic">
+        <di:waypoint x="745" y="180" />
+        <di:waypoint x="832" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0x7o6fy_di" bpmnElement="Flow_0x7o6fy">
+        <di:waypoint x="618" y="240" />
+        <di:waypoint x="720" y="240" />
+        <di:waypoint x="720" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_074ihpg_di" bpmnElement="Event_074ihpg">
+        <dc:Bounds x="832" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="829" y="205" width="43" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0dwjdnc_di" bpmnElement="Pippo">
+        <dc:Bounds x="240" y="140" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1trfsr8_di" bpmnElement="choice" isMarkerVisible="true">
+        <dc:Bounds x="395" y="155" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0i4e8kf_di" bpmnElement="Event_0i4e8kf">
+        <dc:Bounds x="152" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="159" y="205" width="22" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1lbn0ec_di" bpmnElement="Gateway_1lbn0ec" isMarkerVisible="true">
+        <dc:Bounds x="695" y="155" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1j485ca_di" bpmnElement="Event_1j485ca">
+        <dc:Bounds x="582" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="579" y="78" width="41" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_070wlrz_di" bpmnElement="Event_070wlrz">
+        <dc:Bounds x="582" y="222" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="587" y="265" width="28" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0g1ndcb" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.11.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.15.0">
+  <bpmn:signal id="Signal_095mtow" name="done" />
+  <bpmn:signal id="Signal_0ct50ac" name="target_found" />
+  <bpmn:collaboration id="Collaboration_09ar16o">
+    <bpmn:participant id="Participant_176by74" name="REX" processRef="Process_0izm18p" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_0izm18p" isExecutable="true">
+    <bpmn:dataObjectReference id="DataObjectReference_1tf3trm" name="map" dataObjectRef="DataObject_1jymjp7">
+      <bpmn:extensionElements>
+        <camunda:properties>
+          <camunda:property name="x_lower_boundary" value="0.0" />
+          <camunda:property name="y_lower_boundary" value="0.0" />
+          <camunda:property name="x_upper_boundary" value="1.0" />
+          <camunda:property name="y_upper_boundary" value="1.5" />
+        </camunda:properties>
+      </bpmn:extensionElements>
+    </bpmn:dataObjectReference>
+    <bpmn:dataObject id="DataObject_1jymjp7" />
+    <bpmn:endEvent id="Event_1uq7igu">
+      <bpmn:incoming>Flow_09e39d8</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0bfkuhv" sourceRef="Exploring" targetRef="Event_done" />
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Event_09us1oq" targetRef="Exploring" />
+    <bpmn:sequenceFlow id="Flow_09e39d8" sourceRef="Event_done" targetRef="Event_1uq7igu" />
+    <bpmn:callActivity id="Exploring" name="Explore" calledElement="Explore">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_0bfkuhv</bpmn:outgoing>
+      <bpmn:property id="Property_1qqj1fv" name="__targetRef_placeholder" />
+      <bpmn:dataInputAssociation id="DataInputAssociation_1yd13qb">
+        <bpmn:sourceRef>DataObjectReference_1tf3trm</bpmn:sourceRef>
+        <bpmn:targetRef>Property_1qqj1fv</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+    </bpmn:callActivity>
+    <bpmn:startEvent id="Event_09us1oq">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:intermediateCatchEvent id="Event_done" name="done">
+      <bpmn:extensionElements>
+        <camunda:properties>
+          <camunda:property name="type" value="std_msgs/msg/Bool" />
+        </camunda:properties>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0bfkuhv</bpmn:incoming>
+      <bpmn:outgoing>Flow_09e39d8</bpmn:outgoing>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_0ce94et" signalRef="Signal_095mtow" />
+    </bpmn:intermediateCatchEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_09ar16o">
+      <bpmndi:BPMNShape id="Participant_176by74_di" bpmnElement="Participant_176by74" isHorizontal="true">
+        <dc:Bounds x="140" y="80" width="570" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_09e39d8_di" bpmnElement="Flow_09e39d8">
+        <di:waypoint x="568" y="190" />
+        <di:waypoint x="632" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1wiqf22_di" bpmnElement="Flow_1">
+        <di:waypoint x="258" y="190" />
+        <di:waypoint x="360" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0bfkuhv_di" bpmnElement="Flow_0bfkuhv">
+        <di:waypoint x="460" y="190" />
+        <di:waypoint x="532" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="DataObjectReference_1tf3trm_di" bpmnElement="DataObjectReference_1tf3trm">
+        <dc:Bounds x="272" y="95" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="279" y="152" width="22" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1uq7igu_di" bpmnElement="Event_1uq7igu">
+        <dc:Bounds x="632" y="172" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0lsxwpo_di" bpmnElement="Exploring">
+        <dc:Bounds x="360" y="150" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_09us1oq_di" bpmnElement="Event_09us1oq">
+        <dc:Bounds x="222" y="172" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1s4w8r2_di" bpmnElement="Event_done">
+        <dc:Bounds x="532" y="172" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="538" y="215" width="25" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="DataInputAssociation_1yd13qb_di" bpmnElement="DataInputAssociation_1yd13qb">
+        <di:waypoint x="308" y="120" />
+        <di:waypoint x="410" y="120" />
+        <di:waypoint x="410" y="150" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

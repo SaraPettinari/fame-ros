@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0blmywz" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.11.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.15.0">
+  <bpmn:collaboration id="Collaboration_1jigfth">
+    <bpmn:participant id="Participant_17oxnpa" name="Explore" processRef="Explore" />
+  </bpmn:collaboration>
+  <bpmn:process id="Explore" name="Explore" isExecutable="false">
+    <bpmn:startEvent id="StartExplore">
+      <bpmn:outgoing>Flow_0qvju1w</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:parallelGateway id="Gateway_and">
+      <bpmn:incoming>Flow_0qvju1w</bpmn:incoming>
+      <bpmn:outgoing>Flow_1or4btk</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0qinuho</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:endEvent id="Event_End_detect">
+      <bpmn:incoming>Flow_153rk4j</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0or37rc" sourceRef="Gateway_0pccefu" targetRef="Gateway_19xzeks" />
+    <bpmn:sequenceFlow id="Flow_yes" name="yes" sourceRef="Gateway_1knonq6" targetRef="EndExplore">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript">next(null,this.environment.variables.map_points.length &lt;= 0);</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0qvju1w" sourceRef="StartExplore" targetRef="Gateway_and" />
+    <bpmn:endEvent id="EndExplore">
+      <bpmn:incoming>Flow_yes</bpmn:incoming>
+      <bpmn:terminateEventDefinition id="TerminateEventDefinition_08rltx6" />
+    </bpmn:endEvent>
+    <bpmn:exclusiveGateway id="Gateway_19xzeks">
+      <bpmn:incoming>Flow_0or37rc</bpmn:incoming>
+      <bpmn:incoming>Flow_1jdjq4n</bpmn:incoming>
+      <bpmn:outgoing>Flow_0njshbn</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:dataObjectReference id="DataObjectReference_0lgii7y" name="destination" dataObjectRef="DataObject_0z20p9v">
+      <bpmn:extensionElements>
+        <camunda:properties>
+          <camunda:property name="x_destination" value="${x_destination}" />
+          <camunda:property name="y_destination" value="${y_destination}" />
+        </camunda:properties>
+      </bpmn:extensionElements>
+    </bpmn:dataObjectReference>
+    <bpmn:dataObject id="DataObject_0z20p9v" />
+    <bpmn:sequenceFlow id="Flow_02svwnt" sourceRef="Activity_get_points" targetRef="Gateway_1knonq6" />
+    <bpmn:sequenceFlow id="Flow_0njshbn" sourceRef="Gateway_19xzeks" targetRef="Activity_get_points" />
+    <bpmn:scriptTask id="Activity_get_points" name="Get Point" scriptFormat="JavaScript">
+      <bpmn:incoming>Flow_0njshbn</bpmn:incoming>
+      <bpmn:outgoing>Flow_02svwnt</bpmn:outgoing>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_1bj3wv3">
+        <bpmn:targetRef>DataObjectReference_0lgii7y</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:script>var variables = this.environment.variables;
+var points = variables.map_points;
+var destination = points.shift();
+this.environment.variables.x_destination = destination.x;
+this.environment.variables.y_destination = destination.y;
+this.environment.variables.z_destination = 0.0;
+next();</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:exclusiveGateway id="Gateway_1knonq6" name="all the area has been explored?">
+      <bpmn:incoming>Flow_02svwnt</bpmn:incoming>
+      <bpmn:outgoing>Flow_yes</bpmn:outgoing>
+      <bpmn:outgoing>Flow_no</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:dataObjectReference id="DataObjectReference_08n0h1d" name="map" dataObjectRef="DataObject_0pckxck">
+      <bpmn:extensionElements>
+        <camunda:properties>
+          <camunda:property name="x_lower_boundary" value="${x_lower_boundary}" />
+          <camunda:property name="y_lower_boundary" value="${y_lower_boundary}" />
+          <camunda:property name="x_upper_boundary" value="${x_upper_boundary}" />
+          <camunda:property name="y_upper_boundary" value="${y_upper_boundary}" />
+        </camunda:properties>
+      </bpmn:extensionElements>
+    </bpmn:dataObjectReference>
+    <bpmn:dataObject id="DataObject_0pckxck" />
+    <bpmn:scriptTask id="Activity_compute_points" name="Compute Points" scriptFormat="JavaScript">
+      <bpmn:incoming>Flow_1or4btk</bpmn:incoming>
+      <bpmn:outgoing>Flow_1jdjq4n</bpmn:outgoing>
+      <bpmn:property id="Property_0kwd6af" name="__targetRef_placeholder" />
+      <bpmn:dataInputAssociation id="DataInputAssociation_1naqiot">
+        <bpmn:sourceRef>DataObjectReference_08n0h1d</bpmn:sourceRef>
+        <bpmn:targetRef>Property_0kwd6af</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:script>var variables = this.environment.variables;
+var x_low = parseFloat(variables.x_lower_boundary);
+var y_low = parseFloat(variables.y_lower_boundary);
+var x_up = parseFloat(variables.x_upper_boundary);
+var y_up = parseFloat(variables.y_upper_boundary);
+
+var distance_range = 0.4;
+var max_x = (x_up - x_low) / distance_range;
+var max_y = (y_up - y_low ) / distance_range;
+
+var points = new Array();
+var x_val = x_low;
+var y_val = y_low;
+
+points.push({x: x_low, y: y_low});
+for (let i = 0; i &lt;= parseInt(max_x); i++){   
+    for(let j = 0; j &lt;= parseInt(max_y); j++){
+        y_val += 0.4;
+        points.push({x: x_val, y: y_val});
+    }
+    x_val += 0.4;
+    y_val = y_low;
+}
+
+points.push({x: x_up, y: y_up});
+
+this.environment.variables.map_points = points;
+
+next();</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:sequenceFlow id="Flow_1jdjq4n" sourceRef="Activity_compute_points" targetRef="Gateway_19xzeks" />
+    <bpmn:sequenceFlow id="Flow_1or4btk" sourceRef="Gateway_and" targetRef="Activity_compute_points" />
+    <bpmn:callActivity id="Activity_goto" name="GoTo" calledElement="GoTo">
+      <bpmn:incoming>Flow_no</bpmn:incoming>
+      <bpmn:outgoing>Flow_05oreus</bpmn:outgoing>
+      <bpmn:property id="Property_1g0nqea" name="__targetRef_placeholder" />
+      <bpmn:dataInputAssociation id="DataInputAssociation_1tazkqb">
+        <bpmn:sourceRef>DataObjectReference_0lgii7y</bpmn:sourceRef>
+        <bpmn:targetRef>Property_1g0nqea</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="Flow_05oreus" sourceRef="Activity_goto" targetRef="Gateway_0pccefu" />
+    <bpmn:sequenceFlow id="Flow_no" name="no" sourceRef="Gateway_1knonq6" targetRef="Activity_goto">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript">next(null,this.environment.variables.map_points.length &gt; 0);</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:exclusiveGateway id="Gateway_0pccefu">
+      <bpmn:incoming>Flow_05oreus</bpmn:incoming>
+      <bpmn:outgoing>Flow_0or37rc</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_0qinuho" sourceRef="Gateway_and" targetRef="Activity_Detecting" />
+    <bpmn:callActivity id="Activity_Detecting" name="Detect" calledElement="Detect">
+      <bpmn:incoming>Flow_0qinuho</bpmn:incoming>
+      <bpmn:outgoing>Flow_153rk4j</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="Flow_153rk4j" sourceRef="Activity_Detecting" targetRef="Event_End_detect" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1jigfth">
+      <bpmndi:BPMNShape id="Participant_17oxnpa_di" bpmnElement="Participant_17oxnpa" isHorizontal="true">
+        <dc:Bounds x="160" y="83" width="820" height="430" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_153rk4j_di" bpmnElement="Flow_153rk4j">
+        <di:waypoint x="520" y="450" />
+        <di:waypoint x="592" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_06xy9pc_di" bpmnElement="Flow_no">
+        <di:waypoint x="685" y="270" />
+        <di:waypoint x="750" y="270" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="711" y="252" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_05oreus_di" bpmnElement="Flow_05oreus">
+        <di:waypoint x="850" y="270" />
+        <di:waypoint x="905" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1or4btk_di" bpmnElement="Flow_1or4btk">
+        <di:waypoint x="330" y="345" />
+        <di:waypoint x="330" y="310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1jdjq4n_di" bpmnElement="Flow_1jdjq4n">
+        <di:waypoint x="380" y="270" />
+        <di:waypoint x="415" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0njshbn_di" bpmnElement="Flow_0njshbn">
+        <di:waypoint x="465" y="270" />
+        <di:waypoint x="500" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_02svwnt_di" bpmnElement="Flow_02svwnt">
+        <di:waypoint x="600" y="270" />
+        <di:waypoint x="635" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0qvju1w_di" bpmnElement="Flow_0qvju1w">
+        <di:waypoint x="248" y="370" />
+        <di:waypoint x="305" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0qinuho_di" bpmnElement="Flow_0qinuho">
+        <di:waypoint x="330" y="395" />
+        <di:waypoint x="330" y="450" />
+        <di:waypoint x="420" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_17loe99_di" bpmnElement="Flow_yes">
+        <di:waypoint x="660" y="295" />
+        <di:waypoint x="660" y="360" />
+        <di:waypoint x="752" y="360" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="698" y="342" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0or37rc_di" bpmnElement="Flow_0or37rc">
+        <di:waypoint x="930" y="245" />
+        <di:waypoint x="930" y="200" />
+        <di:waypoint x="440" y="200" />
+        <di:waypoint x="440" y="245" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_0e4f5td_di" bpmnElement="StartExplore">
+        <dc:Bounds x="212" y="352" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0713xek_di" bpmnElement="Gateway_and">
+        <dc:Bounds x="305" y="345" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1xxii0t_di" bpmnElement="Event_End_detect">
+        <dc:Bounds x="592" y="432" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0pgppgx_di" bpmnElement="EndExplore">
+        <dc:Bounds x="752" y="342" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_19xzeks_di" bpmnElement="Gateway_19xzeks" isMarkerVisible="true">
+        <dc:Bounds x="415" y="245" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DataObjectReference_0lgii7y_di" bpmnElement="DataObjectReference_0lgii7y">
+        <dc:Bounds x="702" y="105" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="693" y="162" width="54" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_027da90_di" bpmnElement="Activity_get_points">
+        <dc:Bounds x="500" y="230" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1knonq6_di" bpmnElement="Gateway_1knonq6" isMarkerVisible="true">
+        <dc:Bounds x="635" y="245" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="622" y="216" width="76" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DataObjectReference_08n0h1d_di" bpmnElement="DataObjectReference_08n0h1d">
+        <dc:Bounds x="232" y="115" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="239" y="172" width="22" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_136x6ub_di" bpmnElement="Activity_compute_points">
+        <dc:Bounds x="280" y="230" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0r8tmit_di" bpmnElement="Activity_goto">
+        <dc:Bounds x="750" y="230" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0pccefu_di" bpmnElement="Gateway_0pccefu" isMarkerVisible="true">
+        <dc:Bounds x="905" y="245" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0gsku3c_di" bpmnElement="Activity_Detecting">
+        <dc:Bounds x="420" y="410" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="DataOutputAssociation_1bj3wv3_di" bpmnElement="DataOutputAssociation_1bj3wv3">
+        <di:waypoint x="550" y="230" />
+        <di:waypoint x="550" y="130" />
+        <di:waypoint x="702" y="130" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DataInputAssociation_1naqiot_di" bpmnElement="DataInputAssociation_1naqiot">
+        <di:waypoint x="268" y="140" />
+        <di:waypoint x="330" y="140" />
+        <di:waypoint x="330" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DataInputAssociation_1tazkqb_di" bpmnElement="DataInputAssociation_1tazkqb">
+        <di:waypoint x="738" y="130" />
+        <di:waypoint x="800" y="130" />
+        <di:waypoint x="800" y="230" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

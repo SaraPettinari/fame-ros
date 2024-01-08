@@ -1,0 +1,23 @@
+{
+  "name": "fame_engine",
+  "version": "0.0.0",
+  "description": "TODO: Package description",
+  "keywords": [],
+  "author": "",
+  "license": "TODO: License declaration",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "bent": "^7.3.12",
+    "bpmn-engine": "^14.0.0",
+    "camunda-bpmn-moddle": "^6.1.2",
+    "fs": "^0.0.1-security",
+    "jsdom": "^19.0.0",
+    "moddle-context-serializer": "^2.1.0",
+    "quaternion-to-euler": "^0.5.0",
+    "rclnodejs": "^0.17.0",
+    "xml-js": "^1.6.11",
+    "xmldom": "^0.6.0"
+  }
+}

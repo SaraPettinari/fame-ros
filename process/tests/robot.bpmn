@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0cc9gpo" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.11.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.15.0">
+  <bpmn:collaboration id="Collaboration_0he5pw9">
+    <bpmn:participant id="Participant_0rqve3o" processRef="Process_0k3kgq6" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_0k3kgq6" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_1ifwmmo</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:scriptTask id="Activity_08z5fz3" name="Set Vel" scriptFormat="JavaScript">
+      <bpmn:incoming>Flow_1ifwmmo</bpmn:incoming>
+      <bpmn:outgoing>Flow_04eyp5l</bpmn:outgoing>
+      <bpmn:script>this.environment.variables.linear_x = 1.0;
+this.environment.variables.angular_z = 0.5;
+next();</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:sequenceFlow id="Flow_1ifwmmo" sourceRef="StartEvent_1" targetRef="Activity_08z5fz3" />
+    <bpmn:sequenceFlow id="Flow_04eyp5l" sourceRef="Activity_08z5fz3" targetRef="Activity_0cvascg" />
+    <bpmn:endEvent id="Event_1v0i6jj">
+      <bpmn:incoming>Flow_0xlogvp</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0xlogvp" sourceRef="Activity_0cvascg" targetRef="Event_1v0i6jj" />
+    <bpmn:scriptTask id="Activity_0cvascg" scriptFormat="JavaScript">
+      <bpmn:incoming>Flow_04eyp5l</bpmn:incoming>
+      <bpmn:outgoing>Flow_0xlogvp</bpmn:outgoing>
+      <bpmn:script>var node = this.environment.variables.ros_node;
+const publisher = node.createPublisher("geometry_msgs/msg/Twist", "cmd_vel");
+publisher.publish({
+linear: {x: this.environment.variables.linear_x, y: 0.0, z: 0.0},
+angular: {x: 0.0, y: 0.0, z: this.environment.variables.angular_z}
+});
+next();</bpmn:script>
+    </bpmn:scriptTask>
+  </bpmn:process>
+  <bpmn:signal id="Signal_0cy9jbf" name="cmd_vel" />
+  <bpmn:signal id="Signal_1uq487i" name="cmd_vel" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0he5pw9">
+      <bpmndi:BPMNShape id="Participant_0rqve3o_di" bpmnElement="Participant_0rqve3o" isHorizontal="true">
+        <dc:Bounds x="160" y="120" width="600" height="250" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0xlogvp_di" bpmnElement="Flow_0xlogvp">
+        <di:waypoint x="540" y="251" />
+        <di:waypoint x="562" y="251" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_04eyp5l_di" bpmnElement="Flow_04eyp5l">
+        <di:waypoint x="400" y="251" />
+        <di:waypoint x="440" y="251" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ifwmmo_di" bpmnElement="Flow_1ifwmmo">
+        <di:waypoint x="246" y="251" />
+        <di:waypoint x="300" y="251" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="210" y="233" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1m9puwq_di" bpmnElement="Activity_08z5fz3">
+        <dc:Bounds x="300" y="211" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1v0i6jj_di" bpmnElement="Event_1v0i6jj">
+        <dc:Bounds x="562" y="233" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_06nzdk1_di" bpmnElement="Activity_0cvascg">
+        <dc:Bounds x="440" y="211" width="100" height="80" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
