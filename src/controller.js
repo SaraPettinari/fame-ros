@@ -5,64 +5,33 @@ const bent = require('bent');
 const rclnodejs = require('rclnodejs');
 const { EventEmitter } = require('events');
 const listener = new EventEmitter();
-const fs = require('fs');
-var convert = require('xml-js');
-const xml2js = require('xml2js')
-const { XMLParser, XMLBuilder } = require('fast-xml-parser');
+
+const xml2json = require('xml2json')
 
 var topic_dict = {};
-
-var source = '';
 var engine_env = {};
-var process_path = '/home/ubuntu/mbros/fame_engine/process/';
-var process_dict = {};
 
-//console.log(__dirname.split('/install')[0] + '/process')
-
-const definitions = 'bpmn:definitions'
-const collaboration = '@@bpmn:collaboration'
-const participant = '@@bpmn:participant'
-const processes = '@@bpmn:process'
-const signals = '@@bpmn:signal'
-const subProcesses = '@@bpmn:subProcess'
-const callActivity = '@@bpmn:callActivity'
-
-
-function writeProcess(source_process) {
-  var conversion_obj = getSourceObj(source_process);
-  var processObj = getProcess(conversion_obj);
-  var caObjs = processObj[callActivity];
-  if (caObjs) {
-    if (caObjs.length) {
-      for (let i = 0; i < caObjs.length; i++) {
-        //console.log(caObjs[i]);
-        var called_act = caObjs[i].calledElement;
-        var ca_file = process_path + called_act + '.bpmn';
-        var ca_source = fs.readFileSync(ca_file, 'utf8');
-        process_dict[called_act] = [ca_source, false];
-      }
-    } else {
-      //console.log(caObjs);
-      var called_act = caObjs.calledElement;
-      var ca_file = process_path + called_act + '.bpmn';
-      var ca_source = fs.readFileSync(ca_file, 'utf8');
-      process_dict[called_act] = [ca_source, false];
-    }
-  }
-  Object.keys(process_dict).forEach(element => {
-    if (!process_dict[element][1]) {
-      process_dict[element][1] = true;
-      writeProcess(process_dict[element][0]);
-    }
-  });
+const BPMN = {
+  definitions: 'bpmn:definitions',
+  collaboration: 'bpmn:collaboration',
+  participant: 'bpmn:participant',
+  process: 'bpmn:process',
+  signals: 'bpmn:signal',
+  subProcesses: 'bpmn:subProcess',
+  callActivity: 'bpmn:callActivity',
+  extensionElements: 'bpmn:extensionElements',
+  dataObjs: 'data:parameters',
+  data: 'data:parameter',
+  ros_type: 'ros:message',
+  ros_payload: 'ros:payload',
+  ros_data: 'ros:parameter'
 }
 
 function getProcess(dict_source) {
-  const process = 'bpmn:process'
-  return dict_source[definitions][process]
+  return dict_source[BPMN.definitions][BPMN.process]
 }
 
-function mergeCallActivity() {
+/*function mergeCallActivity() {
   var xml = getSource();
   var conversion_obj = getSourceObj(xml);
   var processObj = getProcess(conversion_obj);
@@ -85,9 +54,9 @@ function mergeCallActivity() {
     var conv = convert.xml2json(process_dict[element][0], { compact: true, spaces: 4 });
     conv = conv.replace(/'/g, '"');
     var ca_c = JSON.parse(conv);
-    var process_push = ca_c[definitions][processes];
+    var process_push = ca_c[BPMN.definitions][processes];
     arr_temp_process.push(process_push);
-    conversion_obj[definitions][processes] = arr_temp_process;
+    conversion_obj[BPMN.definitions][processes] = arr_temp_process;
   });
 
   //var result = convert.json2xml(conversion_obj, { compact: true, ignoreComment: true, spaces: 4 });
@@ -113,62 +82,82 @@ function setSource(bpmn_source) {
   else
     source = bpmn_source
 }
+*/
 
+/**
+ * Create an object from the bpmn process model
+ * @param {*} source bpmn source
+ * @returns 
+ */
 function getSourceObj(source) {
   var xml = source;
   var process_result = {}
-  // if it is in the xml format
-  if (source.includes('<?xml')) {
-    xml2js.parseString(xml, { mergeAttrs: true, explicitArray: false }, (err, result) => {
-      if (err) {
-        throw err
-      }
+  try {
+    var jsonstring = xml2json.toJson(xml)
+    var jsonbpmn = JSON.parse(jsonstring)
 
-      Object.keys(result).forEach(element => {
-        var el = result[element]
-        process_result[element] = el
+    Object.keys(jsonbpmn).forEach(element => {
+      var el = jsonbpmn[element]
+      process_result[element] = el
 
-      });
-
-    })
-    return process_result
+    });
+  } catch (error) {
+    console.error('Parsing Error of the BPMN process model')
+    console.log(error)
   }
-  else {
-
-    const options = {
-      ignoreAttributes: false,
-      attributeNamePrefix: "@@",
-      allowBooleanAttributes: true,
-      suppressBooleanAttributes: false,
-    };
-    const parser = new XMLParser(options);
-    var source_obj = parser.parse(source);
-    return source_obj
-  }
+  return process_result
 }
 
+/**
+ * Return the received bpmn
+ * @param {*} bpmn_source 
+ */
+function setSource(bpmn_source) {
+  var source = '';
+  if (bpmn_source.data)
+    source = bpmn_source.data;
+  else
+    source = bpmn_source;
+  return source;
+}
+
+/**
+ * Create the dt message in the form: element_id/status/instance_id
+ * 
+ * @param {*} element element identifier
+ * @param {*} status execution status
+ * @param {*} instance process instance identifier
+ * @returns 
+ */
+function createDtMsg(element, status, instance) {
+  var res_msg = element + '/' + status + '/' + instance
+  return res_msg
+}
 
 rclnodejs.init().then(() => {
   //start ROS node
   const node = new rclnodejs.Node('engine_node');
   var process_name = node.namespace().replace('/', '');
 
-  node.createSubscription('std_msgs/msg/String', '/REX/bpmn_process', (msg) => {
+  node.createSubscription('std_msgs/msg/String', 'bpmn_process', (msg) => {
     node.getLogger().info(`Received process for ${process_name}`)
 
-    setSource(msg)
+    // create publisher over the /fame_dt topic
+    var element_publisher = node.createPublisher('std_msgs/msg/String', '/fame_dt');
 
-    mergeCallActivity();
+    const bpmn_data = setSource(msg)
+
+    //mergeCallActivity();
 
     var tstart = 0;
     var tfinish = 0;
 
-    source = getSource()
+    var source_obj = getSourceObj(bpmn_data)
 
     // initialization of the engine
     const engine = new Engine({
       name: 'fame',
-      source,
+      source: bpmn_data,
       moddleOptions: {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       },
@@ -177,36 +166,47 @@ rclnodejs.init().then(() => {
       }
     });
 
+    // --- HANDLE ELEMENT ENACTMENT ---
 
-    /*    listener.on('flow.take', (flow) => {
-          console.log(`flow.take <${flow.id}> was taken`);
-        });*/
+    listener.on('flow.take', (flow) => {
+      console.log(`flow.take <${flow.id}> was taken`);
+      var message = createDtMsg(flow.id, 'take', '1')
+      element_publisher.publish(message)
+    });
 
     listener.on('activity.start', (activity) => {
-      if (tstart == 0) tstart = activity.messageProperties.timestamp;
-      handleDataObj(activity);
+      if (tstart == 0) {
+        tstart = activity.messageProperties.timestamp;
+      }
+      handleDataObj(activity, source_obj);
       console.log(`activity.start <${activity.id}> was taken`);
+      var message = createDtMsg(activity.id, 'start', '1')
+      element_publisher.publish(message)
     });
 
     listener.on('activity.end', (activity) => {
       tfinish = activity.messageProperties.timestamp;
       addVars(activity.environment.variables); // add activity variables to global ones
       engine_env = engine.environment;
+      var message = createDtMsg(activity.id, 'stop', '1')
+      element_publisher.publish(message)
       //console.log('HERE:', engine.environment.services);
       //console.log(`activity.end <${activity.id}> was released`);
     });
 
-    /*  listener.on('activity.wait', (wait) => {
-        console.log(`wait <${wait.id}> was taken`);
-      });
-    
-      listener.on('activity.throw', (throwev) => {
-        console.log(`throw <${throwev.id}> was taken`);
-      });
-    
-      listener.on('activity.error', (errorev) => {
-        console.log(`error <${errorev.id}> was taken`);
-      });*/
+    /*
+    listener.on('activity.wait', (wait) => {
+      console.log(`wait <${wait.id}> was taken`);
+    });
+
+    listener.on('activity.throw', (throwev) => {
+      console.log(`throw <${throwev.id}> was taken`);
+    });
+
+    listener.on('activity.error', (errorev) => {
+      console.log(`error <${errorev.id}> was taken`);
+    });
+    */
 
     function addVars(var_activity) {
       Object.keys(var_activity).forEach(element => {
@@ -293,36 +293,44 @@ rclnodejs.init().then(() => {
      */
     function camundaExtProperties(activity) {
       if (!activity.behaviour.extensionElements) return;
-      let msg_type; // message type
-      let ref_topic; // topic name
-      let msg_payload; // massage payload
-      for (const extn of activity.behaviour.extensionElements.values) {
-        console.log('------> 3')
-        if (extn.$type === 'camunda:properties') {
-          ref_topic = activity.name;
-          let prop = extn.$children; // properties data
-          msg_type = prop[0].value; // TO FIX -> non ha controlli
-          // if it is a throw signal
-          if (prop.length > 1) {
-            msg_payload = prop[1].value;
-            topic_dict[ref_topic] = [msg_type, msg_payload]         // save properties parameters in the topic dictionary
-          } else { // it is a catch
-            console.log('Subscribed to: ', ref_topic);
-            // added '/' to avoid remap of topics
-            node.createSubscription(msg_type, '/' + ref_topic, (msg) => { //create ROS subscription
-              console.log(`Received message: `, msg);
-              //activity.environment.assignVariables();
-              Object.keys(msg).forEach(element => {
-                // assing to global varibles the payload of the signal
-                const find = Object.keys(activity.environment.variables).find(v => v.startsWith(element));
-                if (find) { // check if there is a matching variable
-                  var value = msg[element];
-                  activity.environment.variables[find] = value;
-                }
-              });
-              activity.getApi().sendApiMessage('signal'); // forces signal catching
+      var msg_type = ''; // message type
+      var ref_topic = ''; // topic name
+      var msg_payload = ''; // massage payload
+      if (activity.behaviour.extensionElements.values) {
+        for (const extn of activity.behaviour.extensionElements.values) {
+          //console.log('------> 3')
+          if (extn.$type === BPMN.ros_type) {
+            ref_topic = activity.name;
+            msg_type = extn.type;
+          }
+          if (extn.$type === BPMN.ros_payload) {
+            var payload = extn.$children
+            payload.forEach(data => {
+              if (data.$type === BPMN.ros_data) {
+                msg_payload += data.name + ': ' + data.value
+              }
             });
           }
+        }
+        if (msg_payload != '') { // if it is a throw signal
+          topic_dict[ref_topic] = [msg_type, msg_payload]
+        } else { // it is a catch
+          // create a subscription to the topic
+          console.log('Subscribed to: ', ref_topic);
+          // added '/' to avoid remap of topics
+          node.createSubscription(msg_type, '/' + ref_topic, (msg) => { //create ROS subscription
+            console.log(`Received message: `, msg);
+            //activity.environment.assignVariables();
+            Object.keys(msg).forEach(element => {
+              // assing to global varibles the payload of the signal
+              const find = Object.keys(activity.environment.variables).find(v => v.startsWith(element));
+              if (find) { // check if there is a matching variable
+                var value = msg[element];
+                activity.environment.variables[find] = value;
+              }
+            });
+            activity.getApi().sendApiMessage('signal'); // forces signal catching
+          });
         }
       }
     }
@@ -331,83 +339,56 @@ rclnodejs.init().then(() => {
      * Assigns data object values to global variables
      * @param {*} activity 
      */
-    function handleDataObj(activity) {
+    function handleDataObj(activity, source) {
       if (!activity.owner.behaviour.dataInputAssociations) {
         if (!activity.owner.behaviour.dataOutputAssociations) return; // check if there are associated data objects
       }
-      var conversion_obj = getSourceObj(getSource());
-      // data objects extraction
-      var processObjs = getProcess(conversion_obj);
-      var dataObjs = [];
-      if (processObjs.length) {
-        for (let i in processObjs) {
-          var dObj = processObjs[i]['bpmn:dataObjectReference'];
-          if (dObj) {
-            if (dObj.length) {
-              for (let j in dObj) {
-                dataObjs.push(dObj[j]);
-              }
-            } else {
-              dataObjs.push(dObj);
-            }
-          }
-        }
-      }
 
-      // activities data objects extraction
-      if (!activity.owner.behaviour.dataInputAssociations) {
-        var act_obj = activity.owner.behaviour.dataOutputAssociations[0].behaviour.targetRef.id;
-      } else
-        var act_obj = activity.owner.behaviour.dataInputAssociations[0].behaviour.sourceRef.id;
-      for (let da in dataObjs) {
-        var obj = dataObjs[da]
-        var obj_id = obj._attributes.id;
-        if (act_obj === obj_id) {
-          var variable = new Object();
-          // if there are values assigned to the variable
-          console.log('------------------> \n' + obj)
-          if (obj['bpmn:extensionElements']) {
-            var properties = obj['bpmn:extensionElements']['camunda:properties']['camunda:property'];
-            //console.log(properties);
-            if (properties.length > 1) {
-              for (let p_index in properties) {
-                var p = properties[p_index]._attributes;
-                // if (!p.value.startsWith('$'))
-                variable[p.name] = p.value;
-              }
-            } else {
-              var p = properties._attributes;
-              //if (!p.value.startsWith('$'))
-              variable[p.name] = p.value;
-            }
+      var conversion_obj = source;
+      var processObjs = getProcess(conversion_obj);
+
+      // data objects extraction
+      var inputs = activity.owner.behaviour.dataInputAssociations || []
+      var outputs = activity.owner.behaviour.dataOutputAssociations || []
+
+      var dataObjs = inputs.concat(outputs);
+
+      dataObjs.forEach(element => {
+        var id = ''
+        if (element.type == 'bpmn:DataInputAssociation')
+          id = element.behaviour.sourceRef.id
+        else if (element.type == 'bpmn:DataOutputAssociation')
+          id = element.behaviour.targetRef.id
+        var objList = processObjs['bpmn:dataObjectReference']
+        var currObj = {}
+
+        if (objList.length) {
+          currObj = objList.find((data) => data.id == id);
+        }
+        else
+          currObj = objList
+
+        var extension = currObj[BPMN.extensionElements][BPMN.dataObjs][BPMN.data]
+
+        if (extension.length) {
+          extension.forEach(data => {
+            var variable = new Object();
+            variable[data.name] = data.value
 
             // add data object variables to the global environment
             activity.environment.assignVariables(variable);
-
-            Object.keys(engine.environment.variables).forEach(element => {
-              if (!(element in Object.keys(activity.environment.variables))) {
-                var v = new Object();
-                v[element] = (engine.environment.variables[element]);
-                // console.log(v);
-                activity.environment.assignVariables(v);
-              }
-            });
             engine.environment.assignVariables(variable);
-          }
-        }
-      }
-    }
+          });
+        } else {
+          var variable = new Object();
+          variable[extension.name] = extension.value
 
-    /*function getAngle(local, orientation_list){
-      var qte= require('quaternion-to-euler');
-      var euler = qte(orientation_list);
-   
-      console.log(euler);
-  
-      return{
-        euler
-      }
-    }*/
+          // add data object variables to the global environment
+          activity.environment.assignVariables(variable);
+          engine.environment.assignVariables(variable);
+        }
+      });
+    }
   });
   node.spin();
 });
