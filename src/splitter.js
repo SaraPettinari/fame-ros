@@ -8,6 +8,7 @@ const collaboration = 'bpmn:collaboration';
 const participant = 'bpmn:participant';
 const processes = 'bpmn:process';
 const signals = 'bpmn:signal';
+const design = 'bpmndi:BPMNDiagram';
 
 
 /**
@@ -46,10 +47,19 @@ function splitter(node) {
             var extract_process = process_dict[element][definitions][processes]
             //console.log(extract_process)
             var curr_process = extract_process.find(p => p.id == element);
-            process_dict[element][definitions][processes] = curr_process;
             curr_process['isExecutable'] = true
-            var x = process_dict[element];
-            var conv_xml = xml2json.toXml(x)
+
+
+            process_dict[element][definitions][processes] = curr_process;
+            var thisProcess = process_dict[element];
+
+            // remove design information
+            if (thisProcess[definitions][design]) {
+                delete thisProcess[definitions][design]
+            }
+            console.log(Object.keys(thisProcess[definitions]))
+
+            var conv_xml = xml2json.toXml(thisProcess)
 
             var robot = element.replace('Process_', '').toUpperCase();
             process_robot[robot] = conv_xml;
