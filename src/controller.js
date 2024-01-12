@@ -6,10 +6,20 @@ const rclnodejs = require('rclnodejs');
 const { EventEmitter } = require('events');
 const listener = new EventEmitter();
 
-const xml2json = require('xml2json')
+const { XMLParser, XMLBuilder } = require("fast-xml-parser");
+
 
 var topic_dict = {};
 var engine_env = {};
+
+const options = {
+  ignoreAttributes: false,
+  attributeNamePrefix: "@_",
+  stopNodes: ["*.bpmn:callActivity"]
+};
+
+const parser = new XMLParser(options);
+const builder = new XMLBuilder(options);
 
 const BPMN = {
   definitions: 'bpmn:definitions',
@@ -29,6 +39,37 @@ const BPMN = {
 
 function getProcess(dict_source) {
   return dict_source[BPMN.definitions][BPMN.process]
+}
+
+function handleCallActivity(dict_source) {
+  var callActivity = getProcess(dict_source)[BPMN.callActivity]//extract the process
+  var caProcess = {}
+  if (callActivity.length) {
+    callActivity.forEach(element => {
+      var name = element['@_name']
+      if (!Object.keys(caProcess).includes(name)) {
+        element = element['#text']
+        var elProcess = element.split("process=\"")[1]
+        elProcess = elProcess.split("</callActivity:process>")[0]
+
+        elProcess = elProcess.slice(0, -2);
+
+        caProcess[name] = elProcess
+      }
+    });
+
+  } else {
+    var name = callActivity['@_name']
+    callActivity = callActivity['#text']
+    var elProcess = callActivity.split("process=\"")[1]
+    elProcess = elProcess.split("</callActivity:process>")[0]
+
+    elProcess = elProcess.slice(0, -2);
+
+    caProcess[name] = elProcess
+  }
+
+  return caProcess
 }
 
 /*function mergeCallActivity() {
@@ -92,9 +133,10 @@ function setSource(bpmn_source) {
 function getSourceObj(source) {
   var xml = source;
   var process_result = {}
+
   try {
-    var jsonstring = xml2json.toJson(xml)
-    var jsonbpmn = JSON.parse(jsonstring)
+
+    let jsonbpmn = parser.parse(xml);
 
     Object.keys(jsonbpmn).forEach(element => {
       var el = jsonbpmn[element]
@@ -145,7 +187,8 @@ rclnodejs.init().then(() => {
     // create publisher over the /fame_dt topic
     var element_publisher = node.createPublisher('std_msgs/msg/String', '/fame_dt');
 
-    const bpmn_data = setSource(msg)
+    var bpmn_data = setSource(msg)
+
 
     //mergeCallActivity();
 
@@ -153,6 +196,18 @@ rclnodejs.init().then(() => {
     var tfinish = 0;
 
     var source_obj = getSourceObj(bpmn_data)
+
+    // append call activity to the main process
+    if (bpmn_data.includes(BPMN.callActivity)) {
+      var caProcess = handleCallActivity(source_obj)
+      Object.keys(caProcess).forEach(element => {
+        var process = caProcess[element]
+        bpmn_data = bpmn_data.replace(process, ' {{ }} ')
+        process = process.replaceAll("bpmn2", "bpmn")
+        var end = bpmn_data.indexOf('</bpmn:definitions>')
+        bpmn_data = [bpmn_data.slice(0, end), process, bpmn_data.slice(end)].join('')
+      });
+    }
 
     // initialization of the engine
     const engine = new Engine({
@@ -166,7 +221,7 @@ rclnodejs.init().then(() => {
       }
     });
 
-    // --- HANDLE ELEMENT ENACTMENT ---
+    // --- ELEMENT ENACTMENT ---
 
     listener.on('flow.take', (flow) => {
       console.log(`flow.take <${flow.id}> was taken`);
