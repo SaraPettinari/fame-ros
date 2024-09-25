@@ -1,14 +1,8 @@
 'use strict';
 const rclnodejs = require('rclnodejs');
 const xml2json = require('xml2json')
-
-
-const definitions = 'bpmn:definitions';
-const collaboration = 'bpmn:collaboration';
-const participant = 'bpmn:participant';
-const processes = 'bpmn:process';
-const signals = 'bpmn:signal';
-const design = 'bpmndi:BPMNDiagram';
+const BPMN = require('./constants').default;
+const { js2xml, json2xml } = require('xml-js');
 
 
 /**
@@ -16,7 +10,7 @@ const design = 'bpmndi:BPMNDiagram';
  * @param {*} node the ROS node
  */
 function splitter(node) {
-
+    
     // creation of the subscription over the /collaboration_diagram topic
     node.createSubscription('std_msgs/msg/String', '/collaboration_diagram', (msg) => {
         var process_dict = {};
@@ -25,43 +19,56 @@ function splitter(node) {
         node.getLogger().info(`Received collaboration diagram`);
         var xml = msg.data;
         // conversion to an object
-        var jsonstring = xml2json.toJson(xml)
-        var jsonbpmn = JSON.parse(jsonstring)
+        var jsonbpmn = JSON.parse(xml2json.toJson(xml))
 
-        var process_definition = jsonbpmn[definitions]
-        var process_participants = process_definition[collaboration][participant]
+        var process_definition = jsonbpmn[BPMN.definitions]
+        var process_participants = process_definition[BPMN.collaboration][BPMN.participant]
+
+        /** 
+         * If there is only a robot in the collaboration
+        */
+        if(!Array.isArray(process_participants)){
+            process_participants = [process_participants]
+        }
 
         // for each participant, split the collaboration in the collaboration
-        for (let i = 0; i < process_participants.length; i++) {
-            var process = process_participants[i]
-            var tempProcess = structuredClone(process)
-            var tempDefinition = structuredClone(process_definition)
-            process_dict[process.processRef] = {};
-            process_dict[process.processRef][definitions] = tempDefinition;
-            process_dict[process.processRef][definitions][collaboration][participant] = tempProcess;
-        }
+        process_participants.forEach((process) => {
+            const tempProcess = {... process}
+            const tempDefinition = structuredClone(process_definition)
+
+            process_dict[process.processRef] = {
+                [BPMN.definitions] : tempDefinition
+            }
+
+            process_dict[process.processRef][BPMN.definitions][BPMN.collaboration][BPMN.participant] = tempProcess
+            process_dict[process.processRef]['name'] = process.name // to ensure proper robot name assignment
+
+        })
+        
 
         // creation of a dictionary {robot_id: bpmn_process, ...}
         Object.keys(process_dict).forEach(element => {
-            process_dict[element][definitions][signals] = process_definition[signals]
-            var extract_process = process_dict[element][definitions][processes]
-            //console.log(extract_process)
-            var curr_process = extract_process.find(p => p.id == element);
+            const def = process_dict[element][BPMN.definitions]
+
+            def[BPMN.signals] = process_definition[BPMN.signals]
+            if(!Array.isArray(def[BPMN.process])){
+                def[BPMN.process] = [def[BPMN.process]]
+            }
+            let curr_process = def[BPMN.process].find(p => p.id == element)
             curr_process['isExecutable'] = true
 
-
-            process_dict[element][definitions][processes] = curr_process;
-            var thisProcess = process_dict[element];
+            process_dict[element][BPMN.definitions][BPMN.process] = curr_process;
+            def[BPMN.process] = curr_process
 
             // remove design information
-            if (thisProcess[definitions][design]) {
-                delete thisProcess[definitions][design]
+            if (def[BPMN.design]) {
+                delete def[BPMN.design]
             }
-            console.log(Object.keys(thisProcess[definitions]))
+            //console.log(Object.keys(def))
 
-            var conv_xml = xml2json.toXml(thisProcess)
+            var conv_xml = xml2json.toXml(process_dict[element])
 
-            var robot = element.replace('Process_', '').toUpperCase();
+            var robot = process_dict[element]['name'].toUpperCase();
             process_robot[robot] = conv_xml;
         })
 
@@ -82,6 +89,7 @@ function splitter(node) {
  * @param {*} bpmn robot process model
  */
 function publish_msg(node, robot, bpmn) {
+    node.getLogger().info('Robot name: ' + robot)
     var publisher = node.createPublisher('std_msgs/msg/String', robot + '/bpmn_process');
 
     setTimeout(function () {

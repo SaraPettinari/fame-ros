@@ -5,6 +5,7 @@ const bent = require('bent');
 const rclnodejs = require('rclnodejs');
 const { EventEmitter } = require('events');
 const listener = new EventEmitter();
+const { BPMN, options, PREFIX, DATA } = require('./constants')
 
 const { XMLParser, XMLBuilder } = require("fast-xml-parser");
 
@@ -12,30 +13,10 @@ const { XMLParser, XMLBuilder } = require("fast-xml-parser");
 var topic_dict = {};
 var engine_env = {};
 
-const options = {
-  ignoreAttributes: false,
-  attributeNamePrefix: "@_",
-  stopNodes: ["*.bpmn:callActivity"]
-};
 
 const parser = new XMLParser(options);
 const builder = new XMLBuilder(options);
 
-const BPMN = {
-  definitions: 'bpmn:definitions',
-  collaboration: 'bpmn:collaboration',
-  participant: 'bpmn:participant',
-  process: 'bpmn:process',
-  signals: 'bpmn:signal',
-  subProcesses: 'bpmn:subProcess',
-  callActivity: 'bpmn:callActivity',
-  extensionElements: 'bpmn:extensionElements',
-  dataObjs: 'data:parameters',
-  data: 'data:parameter',
-  ros_type: 'ros:message',
-  ros_payload: 'ros:payload',
-  ros_data: 'ros:parameter'
-}
 
 function getProcess(dict_source) {
   return dict_source[BPMN.definitions][BPMN.process]
@@ -44,86 +25,26 @@ function getProcess(dict_source) {
 function handleCallActivity(dict_source) {
   var callActivity = getProcess(dict_source)[BPMN.callActivity]//extract the process
   var caProcess = {}
-  if (callActivity.length) {
-    callActivity.forEach(element => {
-      var name = element['@_name']
-      if (!Object.keys(caProcess).includes(name)) {
-        element = element['#text']
-        var elProcess = element.split("process=\"")[1]
-        elProcess = elProcess.split("</callActivity:process>")[0]
 
-        elProcess = elProcess.slice(0, -2);
-
-        caProcess[name] = elProcess
-      }
-    });
-
-  } else {
-    var name = callActivity['@_name']
-    callActivity = callActivity['#text']
-    var elProcess = callActivity.split("process=\"")[1]
-    elProcess = elProcess.split("</callActivity:process>")[0]
-
-    elProcess = elProcess.slice(0, -2);
-
-    caProcess[name] = elProcess
-  }
-
-  return caProcess
-}
-
-/*function mergeCallActivity() {
-  var xml = getSource();
-  var conversion_obj = getSourceObj(xml);
-  var processObj = getProcess(conversion_obj);
-  var spObjs = processObj[subProcesses];
-  if (spObjs) { //the param triggeredByEvent = true blocks the execution of the subprocess
-    if (spObjs.length) {
-      for (let i = 0; i < caObjs.length; i++) {
-        spObjs[i]._attributes.triggeredByEvent = false;
-      }
-    } else {
-      spObjs._attributes.triggeredByEvent = false;
+  function processCallActivityElement(element) {
+    var name = element[PREFIX.name];
+    if (!caProcess.hasOwnProperty(name)) {
+      var elProcess = element[PREFIX.text].split("process=\"")[1].split("</callActivity:process>")[0].slice(0, -2);
+      caProcess[name] = elProcess;
     }
-    conversion_obj[definitions][processes][subProcesses] = spObjs;
-    //console.log(spObjs);
   }
-  writeProcess(source);
-  var arr_temp_process = [processObj];
 
-  Object.keys(process_dict).forEach(element => {
-    var conv = convert.xml2json(process_dict[element][0], { compact: true, spaces: 4 });
-    conv = conv.replace(/'/g, '"');
-    var ca_c = JSON.parse(conv);
-    var process_push = ca_c[BPMN.definitions][processes];
-    arr_temp_process.push(process_push);
-    conversion_obj[BPMN.definitions][processes] = arr_temp_process;
-  });
+  // Handle both array and single object cases
+  if (Array.isArray(callActivity)) {
+    callActivity.forEach(processCallActivityElement);
+  } else {
+    processCallActivityElement(callActivity);
+  }
 
-  //var result = convert.json2xml(conversion_obj, { compact: true, ignoreComment: true, spaces: 4 });
-  const options = {
-    ignoreAttributes: false,
-    attributeNamePrefix: "@@",
-    suppressBooleanAttributes: false,
-    format: true
-  };
-
-  const parser = new XMLBuilder(options);
-  var result = parser.build(conversion_obj);
-  setSource(result);
+  return caProcess;
 }
 
-function getSource() {
-  return source
-}
 
-function setSource(bpmn_source) {
-  if (bpmn_source.data)
-    source = bpmn_source.data
-  else
-    source = bpmn_source
-}
-*/
 
 /**
  * Create an object from the bpmn process model
@@ -249,32 +170,40 @@ rclnodejs.init().then(() => {
       //console.log(`activity.end <${activity.id}> was released`);
     });
 
-    /*
+
     listener.on('activity.wait', (wait) => {
+      //var message = createDtMsg(wait.id, 'wait', '1')
+      //element_publisher.publish(message)
       console.log(`wait <${wait.id}> was taken`);
     });
+    /*
+        listener.on('activity.throw', (throwev) => {
+          console.log(`throw <${throwev.id}> was taken`);
+        });
+    
+        listener.on('activity.error', (errorev) => {
+          console.log(`error <${errorev.id}> was taken`);
+        });
+        */
 
-    listener.on('activity.throw', (throwev) => {
-      console.log(`throw <${throwev.id}> was taken`);
-    });
-
-    listener.on('activity.error', (errorev) => {
-      console.log(`error <${errorev.id}> was taken`);
-    });
-    */
-
+    /**
+     * Add global variables
+     * @param {*} var_activity  executed activity
+     */
     function addVars(var_activity) {
+      const envVars = engine.environment.variables;
+      const excludedKeys = new Set(['ros_node', 'fields', 'content', 'properties']);
+
       Object.keys(var_activity).forEach(element => {
-        if (element != 'ros_node' && element != 'fields' && element != 'content' && element != 'properties') {
-          if (!(element in Object.keys(engine.environment.variables))) {
-            var vs = new Object();
-            vs[element] = var_activity[element];
-            engine.environment.assignVariables(vs)
+        if (!excludedKeys.has(element)) {
+          if (!(element in envVars)) {
+            const vs = { [element]: var_activity[element] };
+            engine.environment.assignVariables(vs);
           }
         }
       });
-
     }
+
 
     /**
      * Management of signal throwing
@@ -291,6 +220,8 @@ rclnodejs.init().then(() => {
         if (key === topic_name) {
           message_type = topic_dict[key][0];
           message_payload = topic_dict[key][1];
+          node.getLogger().info(topic_dict + ' <--- ')
+
           var tempvar = message_payload.match(regexpr);
           // check if there are variables that needs a value assignment
           if (tempvar) {
@@ -315,8 +246,10 @@ rclnodejs.init().then(() => {
         engine.execution.signal(msg.content.message, { ignoreSameDefinition: true });
         console.log(`Publishing message on ${topic_name}: ` + message_payload);
         const publisher = node.createPublisher(message_type, '/' + topic_name);
-        var message_obj = JSON.parse(message_payload); // conversion from string to obj
-        publisher.publish(message_obj);
+
+        //var message_obj = JSON.parse(message_payload); // conversion from string to obj
+
+        publisher.publish(message_payload);
       }
     }, { noAck: true });
 
@@ -331,8 +264,6 @@ rclnodejs.init().then(() => {
         set,
       },
     });
-
-    //engine.environment.addService('getAngle', getAngle);
 
     engine.on('end', (execution) => {
       console.log('Ended:', process_name);
@@ -351,20 +282,37 @@ rclnodejs.init().then(() => {
       var msg_type = ''; // message type
       var ref_topic = ''; // topic name
       var msg_payload = ''; // massage payload
+
       if (activity.behaviour.extensionElements.values) {
         for (const extn of activity.behaviour.extensionElements.values) {
-          //console.log('------> 3')
+
           if (extn.$type === BPMN.ros_type) {
             ref_topic = activity.name;
             msg_type = extn.type;
           }
           if (extn.$type === BPMN.ros_payload) {
             var payload = extn.$children
-            payload.forEach(data => {
-              if (data.$type === BPMN.ros_data) {
-                msg_payload += data.name + ': ' + data.value
-              }
-            });
+            if (payload.length > 1) {
+              msg_payload += '"{ '
+              let payloadParts = [];
+
+              payload.forEach((data) => {
+                if (data.$type === BPMN.ros_data) {
+                  payloadParts.push(`${data.name} ${data.value}`);
+                }
+              });
+
+              msg_payload += payloadParts.join(', ');
+
+              msg_payload += ' }"';
+            }
+            else {
+              payload.forEach(data => {
+                if (data.$type === BPMN.ros_data) {
+                  msg_payload = data.value
+                }
+              });
+            }
           }
         }
         if (msg_payload != '') { // if it is a throw signal
@@ -410,22 +358,28 @@ rclnodejs.init().then(() => {
 
       dataObjs.forEach(element => {
         var id = ''
-        if (element.type == 'bpmn:DataInputAssociation')
+        if (element.type == DATA.data_in)
           id = element.behaviour.sourceRef.id
-        else if (element.type == 'bpmn:DataOutputAssociation')
+        else if (element.type == DATA.data_out)
           id = element.behaviour.targetRef.id
-        var objList = processObjs['bpmn:dataObjectReference']
+
+        var objList = processObjs[DATA.data_obj]
         var currObj = {}
 
-        if (objList.length) {
+        if (Array.isArray(objList)) {
           currObj = objList.find((data) => data.id == id);
         }
         else
           currObj = objList
 
-        var extension = currObj[BPMN.extensionElements][BPMN.dataObjs][BPMN.data]
+        var extension = currObj[BPMN.extensionElements]?.[BPMN.dataObjs]?.[BPMN.data]
+        if (!extension) {
+          console.error('No extension found for', id)
+          return
+        }
 
-        if (extension.length) {
+
+        if (Array.isArray(extension)) {
           extension.forEach(data => {
             var variable = new Object();
             variable[data.name] = data.value
@@ -436,7 +390,7 @@ rclnodejs.init().then(() => {
           });
         } else {
           var variable = new Object();
-          variable[extension.name] = extension.value
+          variable[extension[PREFIX.name]] = extension[PREFIX.value]
 
           // add data object variables to the global environment
           activity.environment.assignVariables(variable);
