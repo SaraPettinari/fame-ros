@@ -41,11 +41,14 @@ def generate_launch_description():
 **Package initialization**:
 ```bash
 cd fame_engine
+npm install
 colcon build
 source install/setup.bash
 ```
 
 **Node execution**:
 ```bash
+ros2 launch fame_engine splitter.launch.py
+
 ros2 launch fame_engine <file_name>.py
 ```

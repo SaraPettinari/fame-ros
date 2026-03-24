@@ -1,7 +1,7 @@
 'use strict';
 const rclnodejs = require('rclnodejs');
 const xml2json = require('xml2json')
-const BPMN = require('./constants').default;
+const { BPMN, options, PREFIX, DATA } = require('./constants')
 const { js2xml, json2xml } = require('xml-js');
 
 

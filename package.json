@@ -1,26 +1,33 @@
 {
   "name": "fame_engine",
-  "version": "0.0.0",
-  "description": "TODO: Package description",
+  "version": "0.1.5",
+  "description": "A ROS package to deploy a BPMN engine as a ROS node",
   "keywords": [],
   "author": {
     "name": "Sara Pettinari",
-    "email": "sara.pettinari@unicam.it",
+    "email": "sara.pettinari@gssi.it",
     "url": "https://pros.unicam.it/"
   },
+  "contributors": [
+    {
+      "name": "bpmn-engine package",
+      "url": "https://github.com/paed01/bpmn-engine"
+    }
+  ],
   "license": "TODO: License declaration",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "bent": "^7.3.12",
-    "bpmn-engine": "^18.0.0",
-    "camunda-bpmn-moddle": "^6.1.2",
-    "fs": "^0.0.1-security",
-    "jsdom": "^19.0.0",
-    "moddle-context-serializer": "^2.2.0",
+    "bpmn-engine": "^22.0.3",
+    "camunda-bpmn-moddle": "^7.0.1",
+    "fast-xml-parser": "^4.5.0",
+    "fs": "^0.0.2",
+    "jsdom": "^25.0.1",
+    "moddle-context-serializer": "^4.2.1",
     "quaternion-to-euler": "^0.5.0",
-    "rclnodejs": "^0.24.0",
+    "rclnodejs": "^0.27.4",
     "xml-js": "^1.6.11",
     "xml2json": "^0.12.0",
     "xmldom": "^0.6.0"

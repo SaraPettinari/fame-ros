@@ -12,6 +12,7 @@ const BPMN = {
     ros_type: 'ros:message',
     ros_payload: 'ros:payload',
     ros_data: 'ros:parameter',
+    ros_service: 'ros:service',
     design : 'bpmndi:BPMNDiagram'
   }
 

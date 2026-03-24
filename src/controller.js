@@ -12,6 +12,7 @@ const { XMLParser, XMLBuilder } = require("fast-xml-parser");
 
 var topic_dict = {};
 var engine_env = {};
+var service_dict = {};
 
 
 const parser = new XMLParser(options);
@@ -130,6 +131,8 @@ rclnodejs.init().then(() => {
       });
     }
 
+    node.getLogger().info(bpmn_data)
+
     // initialization of the engine
     const engine = new Engine({
       name: 'fame',
@@ -158,6 +161,28 @@ rclnodejs.init().then(() => {
       console.log(`activity.start <${activity.id}> was taken`);
       var message = createDtMsg(activity.id, 'start', '1')
       element_publisher.publish(message)
+
+      if (activity.type.includes('Service') && Object.keys(service_dict).includes(activity.id)) {
+        console.log(`! Intercepted a ROS service task ${activity.id} !`);
+
+        const { name, type, payload } = service_dict[activity.id];
+        const client = node.createClient(type, name);
+
+        console.log(`-> Calling service: ${name}`);
+
+        client.sendRequest(payload, (response) => {
+          if (response.error) {
+            console.error(`Error in service call for ${activity.id}: ${response.error}`);
+            activity.signal({ forcedResult: `error: ${response.error}` });
+          } else {
+            console.log(`Received response: ${response}`);
+            activity.signal({ forcedResult: `completed ${activity.id} with response ${response}` });
+          }
+
+          // Cleanup client if applicable
+          if (client.close) client.close();
+        });
+      }
     });
 
     listener.on('activity.end', (activity) => {
@@ -285,56 +310,75 @@ rclnodejs.init().then(() => {
 
       if (activity.behaviour.extensionElements.values) {
         for (const extn of activity.behaviour.extensionElements.values) {
+          if (activity.type.includes('Event')) {
 
-          if (extn.$type === BPMN.ros_type) {
-            ref_topic = activity.name;
-            msg_type = extn.type;
-          }
-          if (extn.$type === BPMN.ros_payload) {
-            var payload = extn.$children
-            if (payload.length > 1) {
-              msg_payload += '"{ '
-              let payloadParts = [];
-
-              payload.forEach((data) => {
-                if (data.$type === BPMN.ros_data) {
-                  payloadParts.push(`${data.name} ${data.value}`);
-                }
-              });
-
-              msg_payload += payloadParts.join(', ');
-
-              msg_payload += ' }"';
+            if (extn.$type === BPMN.ros_type) {
+              ref_topic = activity.name;
+              msg_type = extn.type;
             }
-            else {
-              payload.forEach(data => {
-                if (data.$type === BPMN.ros_data) {
-                  msg_payload = data.value
-                }
-              });
-            }
-          }
-        }
-        if (msg_payload != '') { // if it is a throw signal
-          topic_dict[ref_topic] = [msg_type, msg_payload]
-        } else { // it is a catch
-          // create a subscription to the topic
-          console.log('Subscribed to: ', ref_topic);
-          // added '/' to avoid remap of topics
-          node.createSubscription(msg_type, '/' + ref_topic, (msg) => { //create ROS subscription
-            console.log(`Received message: `, msg);
-            //activity.environment.assignVariables();
-            Object.keys(msg).forEach(element => {
-              // assing to global varibles the payload of the signal
-              const find = Object.keys(activity.environment.variables).find(v => v.startsWith(element));
-              if (find) { // check if there is a matching variable
-                var value = msg[element];
-                activity.environment.variables[find] = value;
+            if (extn.$type === BPMN.ros_payload) {
+              var payload = extn.$children
+              if (payload.length > 1) {
+                msg_payload += '"{ '
+                let payloadParts = [];
+
+                payload.forEach((data) => {
+                  if (data.$type === BPMN.ros_data) {
+                    payloadParts.push(`${data.name} ${data.value}`);
+                  }
+                });
+
+                msg_payload += payloadParts.join(', ');
+
+                msg_payload += ' }"';
               }
-            });
-            activity.getApi().sendApiMessage('signal'); // forces signal catching
-          });
+              else {
+                payload.forEach(data => {
+                  if (data.$type === BPMN.ros_data) {
+                    msg_payload = data.value
+                  }
+                });
+              }
+            }
+
+            if (msg_payload != '') { // if it is a throw signal
+              topic_dict[ref_topic] = [msg_type, msg_payload]
+            } else { // it is a catch
+              // create a subscription to the topic
+              console.log('Subscribed to: ', ref_topic);
+              // added '/' to avoid remap of topics
+              node.createSubscription(msg_type, '/' + ref_topic, (msg) => { //create ROS subscription
+                console.log(`Received message: `, msg);
+                //activity.environment.assignVariables();
+                Object.keys(msg).forEach(element => {
+                  // assing to global varibles the payload of the signal
+                  const find = Object.keys(activity.environment.variables).find(v => v.startsWith(element));
+                  if (find) { // check if there is a matching variable
+                    var value = msg[element];
+                    activity.environment.variables[find] = value;
+                  }
+                });
+                activity.getApi().sendApiMessage('signal'); // forces signal catching
+              });
+            }
+          }
+          else if (activity.type.includes('Service')) {
+            if (!Object.keys(service_dict).includes(activity.id)) {
+              service_dict[activity.id] = {
+                name: '', type: '', payload: ''
+              }
+            }
+            if (extn.$type === BPMN.ros_service) {
+              service_dict[activity.id].name = extn.name;
+              service_dict[activity.id].type = extn.type;
+            }
+            if (extn.$type === BPMN.ros_payload) {
+              service_dict[activity.id].payload = extn.data;
+            }
+          }
+
         }
+
       }
     }
 
